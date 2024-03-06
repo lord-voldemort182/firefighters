@@ -1,0 +1,270 @@
+
+# import data-------------------------------------------------------------------------
+
+
+
+# export data -------------------------------------------------------------------------
+
+write_xlsx(x = deaths, path = "/Users/alexstewart/Desktop/r stuff/deaths.xlsx",
+           col_names = TRUE
+
+# -------------------------------------------------------------------------
+
+
+# separate the date into separate columns-------------------------------------------------------------------------
+
+deaths <- deaths %>%
+  mutate(date_of_death = ymd(date_of_death)) %>%
+  mutate(year = year(date_of_death),
+         month = month(date_of_death),
+         day = day(date_of_death))
+
+deaths2 <- deaths %>%
+  mutate(date_of_death = ymd(date_of_death)) %>%
+  mutate(year = year(date_of_death),
+         month = month(date_of_death),
+         day = day(date_of_death))
+
+table(deaths2$year)
+
+
+#remove the 9/11 firefighters and only consider 1991 and up
+deaths = deaths %>% 
+  filter(!(year == 2001 & month == 9 & day == 11)) %>% 
+  filter(year > 1990)
+
+
+#combine the smaller deaths into other cat
+deaths = deaths %>% 
+  mutate(
+    cause_of_fatal_injury = ifelse(cause_of_fatal_injury == "Assault", "Other",
+                        ifelse(cause_of_fatal_injury == "Contact With", "Other",
+                        ifelse(cause_of_fatal_injury == "Out of Air", "Other",
+                        ifelse(cause_of_fatal_injury == "Unknown", "Other", cause_of_fatal_injury
+                        ))))) %>% 
+  mutate(cause_of_fatal_injury = ifelse(cause_of_fatal_injury == "Vehicle Collision - Includes Aircraft", "Vehicle/Aircraft Collision"
+                                        , cause_of_fatal_injury ))
+
+
+# graph deaths by cause of injury-------------------------------------------------------------------------
+
+deathsgraph = deaths %>% 
+  filter(year > 1990) %>% 
+  group_by(cause_of_fatal_injury) %>% 
+  summarise(
+    count = n()
+  ) %>% 
+  mutate(total_count = sum(count),
+         frequency = round((count / total_count) * 100))
+
+
+deathsgraph2 = deaths %>% 
+  drop_na(cause_of_fatal_injury) %>% 
+  filter(year > 1990) %>% 
+  mutate(cause_of_fatal_injury = ifelse(cause_of_fatal_injury == "Stress/Overexertion", "Stress/Overexertion", "Other")) %>% 
+  group_by(cause_of_fatal_injury) %>% 
+  summarise(
+    count = n()
+  ) %>% 
+  mutate(total_count = sum(count),
+       frequency = round((count / total_count) * 100))
+
+
+# graph deaths by cause of injury-------------------------------------------------------------------------
+
+deathsgraph %>% 
+  drop_na(cause_of_fatal_injury) %>%
+  ggplot(aes(cause_of_fatal_injury, count)) +
+  geom_bar(stat = "identity", position = "dodge",  color = "#f47321", fill = "#005030") +
+  geom_text(aes(label = count), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Cause of on-duty firefighter deaths since 1991")
+
+deathsgraph2 %>% 
+  drop_na(cause_of_fatal_injury) %>% 
+  ggplot(aes(cause_of_fatal_injury, count)) +
+  geom_bar(stat = "identity", position = "dodge",  color = "#f47321", fill = "#005030") +
+  geom_text(aes(label = count), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Cause of on-duty firefighter deaths since 1991")
+
+
+
+# create age groups -------------------------------------------------------------------------
+
+deaths = deaths %>% 
+  mutate(age_cats = ifelse(age <= 44, "44 and under",
+                           ifelse(age >= 45 & age < 55, "45-54",
+                                  ifelse(age >= 55 & age < 65, "55-64", 
+                                         ifelse(age >= 65, "65 and over", age)))))
+         
+
+table(deaths$age_cats)
+
+
+# graph deaths by age cats-------------------------------------------------------------------------
+deathschart4 = deaths %>% 
+  drop_na(age_cats) %>% 
+  group_by(age_cats) %>% 
+  summarize(
+    count = n()
+  ) %>% 
+  mutate(total_count = sum(count),
+         frequency = round((count / total_count) * 100))
+
+
+deathschart4 %>%
+  drop_na(age_cats) %>% 
+  ggplot(aes(age_cats, count)) +
+  geom_col(color = "#f47321", fill = "#005030")+
+  geom_text(aes(label = count), position = position_dodge(width = 0.9), vjust = -0.5)
+
+
+deathschart4 %>%
+  drop_na(age_cats) %>% 
+  ggplot(aes(age_cats, frequency)) +
+  geom_col(color = "#f47321", fill = "#005030") +
+  geom_text(aes(label = frequency), position = position_dodge(width = 0.9), vjust = -0.5)
+
+
+
+# graph cardiac deaths by age group-------------------------------------------------------------------------
+deathschart5 = deaths %>% 
+  filter(cause_of_fatal_injury == "Stress/Overexertion") %>% 
+  drop_na(age_cats) %>% 
+  group_by(age_cats) %>% 
+  summarize(
+    count = n()
+  ) %>% 
+  mutate(total_count = sum(count),
+         frequency = round((count / total_count) * 100))
+
+
+deathschart5 %>% 
+  drop_na(age_cats) %>% 
+  ggplot(aes(age_cats, count)) +
+  geom_col(color = "#f47321", fill = "#005030")+
+  geom_text(aes(label = count), position = position_dodge(width = 0.9), vjust = -0.5)
+
+
+deathschart5 %>%
+  drop_na(age_cats) %>% 
+  ggplot(aes(age_cats, frequency)) +
+  geom_col(color = "#f47321", fill = "#005030") +
+  geom_text(aes(label = frequency), position = position_dodge(width = 0.9), vjust = -0.5)
+
+
+
+
+
+# graph deaths by year-------------------------------------------------------------------------
+
+deaths %>% 
+  group_by(year) %>% 
+  summarize(
+    count = n()
+  )
+
+deaths %>% 
+  ggplot(aes(year)) +
+  geom_bar()
+
+
+deaths %>% 
+  ggplot(aes(year)) +
+  geom_bar()
+
+deaths %>% 
+  drop_na(year) %>% 
+  group_by(year) %>% 
+  summarize(
+    count = n(),
+  ) %>% 
+  mutate(
+    mean = mean(count)
+  )
+
+
+# what % of Stress/Overexertion are heart attacks?-------------------------------------------------------------------------
+
+deaths %>% 
+  filter(cause_of_fatal_injury == "Stress/Overexertion") %>% 
+  drop_na(nature_of_fatal_injury) %>% 
+  group_by(nature_of_fatal_injury) %>% 
+  summarise(
+    count = n()
+  ) %>% 
+  mutate(total_count = sum(count),
+         frequency = round((count / total_count) * 100))
+
+
+deaths %>% 
+  filter(cause_of_fatal_injury == "Stress/Overexertion") %>% 
+  group_by(rank) %>% 
+  summarise(
+    count = n()
+  ) %>% 
+  mutate(total_count = sum(count),
+         frequency = round((count / total_count) * 100))
+
+
+
+# -------------------------------------------------------------------------
+
+# deaths by type of firefighter-------------------------------------------------------------------------
+
+deaths %>% 
+  drop_na(classification) %>% 
+  group_by(classification) %>% 
+  summarise(
+    count = n(),
+    mean_age = mean(age, na.rm = T)
+  ) %>% 
+  mutate(total_count = sum(count),
+         frequency = round((count / total_count) * 100))
+
+
+deaths %>% 
+  filter(cause_of_fatal_injury == "Stress/Overexertion") %>% 
+  group_by(classification) %>% 
+  summarise(
+    count = n()
+  ) %>% 
+  mutate(total_count = sum(count),
+         frequency = round((count / total_count) * 100))
+
+
+# are volunteers more likely to have heart attacks than career?-------------------------------------------------------------------------
+#create a subset of the data and create a heart attack variable - this will be our main outcome 
+deaths_heartattacks = deaths %>% 
+  select(cause_of_fatal_injury, age, classification) %>% 
+  filter(classification == "Career" | classification == "Volunteer") %>% 
+  mutate(heart_attack = ifelse(cause_of_fatal_injury == "Stress/Overexertion", 0, 1))
+
+
+deaths_heartattacks %>% 
+  group_by(classification) %>% 
+  summarise(
+    count = n(),
+    heartattacks = sum(heart_attack, na.rm = T),
+    age = mean(age, na.rm = T)
+  ) %>% 
+  mutate(total_count = sum(count),
+         frequency = round((count / total_count) * 100))
+
+
+# binomial regression-------------------------------------------------------------------------
+
+um99 = glm(heart_attack ~ classification + age, family = "binomial", data = deaths_heartattacks)
+summary(um99)
+
+exp(-0.339)
+
+
+# grab a random sample-------------------------------------------------------------------------
+
+deaths |> 
+  select(first_name, last_name, initial_summary ) |> 
+  sample_n(2)
+
+
+
+
